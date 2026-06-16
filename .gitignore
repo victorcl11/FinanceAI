@@ -1,0 +1,12 @@
+# Chave de API
+.env
+
+# Banco de dados local
+financeai.db
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Ambiente virtual
+venv/
