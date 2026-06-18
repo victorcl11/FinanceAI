@@ -1,15 +1,15 @@
 import sqlite3
 import os
 from datetime import datetime
-from google import genai
+from groq import Groq
 from dotenv import load_dotenv
 
 # ─────────────────────────────────────────
 # CONFIGURAÇÃO
 # ─────────────────────────────────────────
-load_dotenv()  # Carrega as variáveis do arquivo .env
+load_dotenv()
 
-cliente = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+cliente = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ─────────────────────────────────────────
 # BUSCA MANCHETES VÁLIDAS NO BANCO
@@ -34,16 +34,15 @@ def buscar_manchetes():
 
 
 # ─────────────────────────────────────────
-# ANÁLISE COM GEMINI
+# ANÁLISE COM GROQ
 # ─────────────────────────────────────────
 def analisar_manchetes(manchetes):
-    """Envia as manchetes para o Gemini e retorna a análise."""
+    """Envia as manchetes para o Groq e retorna a análise."""
 
     if not manchetes:
         print("⚠️  Nenhuma manchete válida no banco. Rode o coletor.py primeiro.")
         return
 
-    # Monta o texto com as manchetes
     lista_manchetes = ""
     for i, (titulo, fonte, publicado) in enumerate(manchetes, 1):
         lista_manchetes += f"{i}. [{fonte}] {titulo}\n"
@@ -63,12 +62,21 @@ Seja objetivo e direto. Foque no impacto para o investidor brasileiro."""
 
     print("🤖 Enviando manchetes para análise...\n")
 
-    resposta = cliente.models.generate_content(
-        model="gemini-2.0-flash-lite",
-        contents=prompt
+    resposta = cliente.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {
+                "role": "system",
+                "content": "Você é um analista financeiro experiente focado no mercado brasileiro. Suas análises são objetivas, claras e úteis para investidores."
+            },
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
     )
 
-    return resposta.text
+    return resposta.choices[0].message.content
 
 
 # ─────────────────────────────────────────
@@ -79,7 +87,6 @@ if __name__ == "__main__":
     print("       FinanceAI — Análise de Mercado")
     print("=" * 55)
 
-    # 1. Busca manchetes do banco
     manchetes = buscar_manchetes()
     print(f"📰 {len(manchetes)} manchetes encontradas no banco.\n")
 
@@ -90,13 +97,14 @@ if __name__ == "__main__":
 
         print()
 
-        # 2. Envia para o Gemini analisar
         analise = analisar_manchetes(manchetes)
 
-        # 3. Exibe o resultado
         print("=" * 55)
         print("📊 ANÁLISE DO MERCADO")
         print("=" * 55)
         print(analise)
         print("=" * 55)
         print(f"⏱  Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+
+    else:
+        print("⚠️  Banco vazio. Rode o coletor.py primeiro.")

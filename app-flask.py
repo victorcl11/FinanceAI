@@ -1,9 +1,10 @@
 import sqlite3
 import os
+import json
 from datetime import datetime
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-from openai import OpenAI
+from groq import Groq
 from dotenv import load_dotenv
 
 # ─────────────────────────────────────────
@@ -14,10 +15,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)  # Permite o frontend chamar o backend sem bloqueio
 
-cliente = OpenAI(
-    api_key=os.getenv("GROK_API_KEY"),
-    base_url="https://api.x.ai/v1",
-)
+cliente = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ─────────────────────────────────────────
 # FUNÇÕES AUXILIARES
@@ -50,8 +48,8 @@ def buscar_manchetes(keyword=None):
     return manchetes
 
 
-def analisar_com_grok(manchetes, keyword):
-    """Envia as manchetes para o Grok e retorna a análise estruturada em JSON."""
+def analisar_com_groq(manchetes, keyword):
+    """Envia as manchetes para o Groq e retorna a análise estruturada em JSON."""
 
     lista_manchetes = ""
     for i, (titulo, fonte, publicado, link) in enumerate(manchetes, 1):
@@ -84,7 +82,7 @@ Manchetes:
 {lista_manchetes}"""
 
     resposta = cliente.chat.completions.create(
-        model="grok-3-fast-beta",
+        model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "system",
@@ -97,9 +95,7 @@ Manchetes:
         ]
     )
 
-    import json
     texto = resposta.choices[0].message.content.strip()
-    # Remove possíveis blocos de markdown caso venham
     texto = texto.replace("```json", "").replace("```", "").strip()
     return json.loads(texto)
 
@@ -123,10 +119,8 @@ def analisar():
         if not keyword:
             return jsonify({"erro": "Palavra-chave não informada."}), 400
 
-        # 1. Busca manchetes do banco
         manchetes = buscar_manchetes(keyword)
 
-        # Se não achou com o filtro, pega todas as válidas
         if not manchetes:
             manchetes = buscar_manchetes()
 
@@ -135,10 +129,8 @@ def analisar():
                 "erro": "Nenhuma manchete no banco. Rode o coletor.py primeiro."
             }), 404
 
-        # 2. Analisa com o Grok
-        analise = analisar_com_grok(manchetes, keyword)
+        analise = analisar_com_groq(manchetes, keyword)
 
-        # 3. Adiciona as manchetes ao retorno para o frontend exibir
         analise["manchetes"] = [
             {
                 "titulo": titulo,
@@ -146,7 +138,7 @@ def analisar():
                 "publicado": publicado,
                 "link": link
             }
-            for titulo, fonte, publicado, link in manchetes[:10]  # máximo 10
+            for titulo, fonte, publicado, link in manchetes[:50]
         ]
 
         return jsonify(analise)
@@ -157,13 +149,13 @@ def analisar():
 
 @app.route("/manchetes", methods=["GET"])
 def listar_manchetes():
-    """Retorna todas as manchetes válidas no banco."""
+    """Retorna todas as manchetes válidas no banco (usado pelo ticker lateral)."""
     manchetes = buscar_manchetes()
     return jsonify({
         "total": len(manchetes),
         "manchetes": [
             {"titulo": t, "fonte": f, "publicado": p, "link": l}
-            for t, f, p, l in manchetes
+            for t, f, p, l in manchetes[:50]
         ]
     })
 

@@ -9,10 +9,15 @@ FEEDS = [
     {"nome": "InfoMoney",         "url": "https://www.infomoney.com.br/feed/"},
     {"nome": "Valor Econômico",   "url": "https://valor.globo.com/rss/home"},
     {"nome": "Reuters Brasil",    "url": "https://br.reuters.com/rssFeed/businessNews"},
+    {"nome": "InfoMoney Mercados","url": "https://www.infomoney.com.br/mercados/feed/"},
+    {"nome": "InfoMoney Negócios","url": "https://www.infomoney.com.br/negocios/feed/"},
+    {"nome": "CNN Brasil Economia","url": "https://www.cnnbrasil.com.br/economia/feed/"},
+    {"nome": "Estadão Economia",  "url": "https://www.estadao.com.br/economia/rss"},
+    {"nome": "Money Times",       "url": "https://www.moneytimes.com.br/feed/"},
 ]
 
 # Quanto tempo cada manchete fica válida no banco
-HORAS_VALIDADE = 2
+HORAS_VALIDADE = 6
 
 # ─────────────────────────────────────────
 # BANCO DE DADOS
